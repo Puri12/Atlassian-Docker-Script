@@ -24,11 +24,11 @@ jobs:
 
         ## 깃허브 레지스트리에 Docker 빌드 후 이미지 업로드
       - name: Build and push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: ./dockerfiles/crowd/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/crowd-centOS7:latest
-            ghcr.io/${{ github.repository_owner }}/crowd-centOS7:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/atlassian-docker-script:latest
+            ghcr.io/${{ github.repository_owner }}/atlassian-docker-script:${{ github.sha }}
