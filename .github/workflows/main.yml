@@ -1,0 +1,34 @@
+name: Make Docker Image
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs: 
+  crowd-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+        ## 깃허브 레지스트리 사용을 위한 로그인
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.USER }}
+          password: ${{ secrets.CR_PAT }}
+
+        ## 깃허브 레지스트리에 Docker 빌드 후 이미지 업로드
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./dockerfiles/crowd/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/Crowd-CentOS7:latest
+            ghcr.io/${{ github.repository_owner }}/Crowd-CentOS7:${{ github.sha }}
