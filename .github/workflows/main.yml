@@ -30,5 +30,5 @@ jobs:
           file: ./dockerfiles/crowd/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/atlassian-docker-script:latest
-            ghcr.io/${{ github.repository_owner }}/atlassian-docker-script:${{ github.sha }}
+            ghcr.io/puri12/atlassian-docker-script:latest
+            ghcr.io/puri12/atlassian-docker-script:${{ github.sha }}
