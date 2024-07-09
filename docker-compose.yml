@@ -1,106 +1,280 @@
 version: '3.4'
  
 services:
-    postgres:
-        container_name: postgres
-        image: postgres:13.9
+    jira-postgres:
+        container_name: jira-postgres
+        image: postgres:${PG_IMAGE_VERSION:-13}
         environment:
-            POSTGRES_USER: user
-            POSTGRES_PASSWORD: changeme
+            POSTGRES_USER: ${PG_USER:-postgres}
+            POSTGRES_PASSWORD: ${PG_PASSWORD:-changeme}
         volumes:
-            - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-            - /data/postgres:/var/lib/postgresql/data
+            - ./docker-entrypoint-initdb.d/jira.sh:/docker-entrypoint-initdb.d/jira.sh
+            - jira-pg:/var/lib/postgresql/data
         ports:
-            - "5432:5432"
+            - "5432"
         networks:
             - atlassian
+            
+            
+    crowd-postgres:
+        container_name: crowd-postgres
+        image: postgres:${PG_IMAGE_VERSION:-13}
+        environment:
+            POSTGRES_USER: ${PG_USER:-postgres}
+            POSTGRES_PASSWORD: ${PG_PASSWORD:-changeme}
+        volumes:
+            - ./docker-entrypoint-initdb.d/crowd.sh:/docker-entrypoint-initdb.d/crowd.sh
+            - crowd-pg:/var/lib/postgresql/data
+        ports:
+            - "5432"
+        networks:
+            - atlassian
+            
+            
+    confluence-postgres:
+        container_name: confluence-postgres
+        image: postgres:${PG_IMAGE_VERSION:-13}
+        environment:
+            POSTGRES_USER: ${PG_USER:-postgres}
+            POSTGRES_PASSWORD: ${PG_PASSWORD:-changeme}
+        volumes:
+            - ./docker-entrypoint-initdb.d/confluence.sh:/docker-entrypoint-initdb.d/confluence.sh
+            - confluence-pg:/var/lib/postgresql/data
+        ports:
+            - "5432"
+        networks:
+            - atlassian
+            
+            
+    jsm-postgres:
+        container_name: jsm-postgres
+        image: postgres:${PG_IMAGE_VERSION:-13}
+        environment:
+            POSTGRES_USER: ${PG_USER:-postgres}
+            POSTGRES_PASSWORD: ${PG_PASSWORD:-changeme}
+        volumes:
+            - ./docker-entrypoint-initdb.d/jsm.sh:/docker-entrypoint-initdb.d/jsm.sh
+            - jsm-pg:/var/lib/postgresql/data
+        ports:
+            - "5432"
+        networks:
+            - atlassian
+            
+            
+    bitbucket-postgres:
+        container_name: bitbucket-postgres
+        image: postgres:${PG_IMAGE_VERSION:-13}
+        environment:
+            POSTGRES_USER: ${PG_USER:-postgres}
+            POSTGRES_PASSWORD: ${PG_PASSWORD:-changeme}
+        volumes:
+            - ./docker-entrypoint-initdb.d/bitbucket.sh:/docker-entrypoint-initdb.d/bitbucket.sh
+            - bitbucket-pg:/var/lib/postgresql/data
+        ports:
+            - "5432"
+        networks:
+            - atlassian
+            
+            
+    bamboo-postgres:
+        container_name: bamboo-postgres
+        image: postgres:${PG_IMAGE_VERSION:-13}
+        environment:
+            POSTGRES_USER: ${PG_USER:-postgres}
+            POSTGRES_PASSWORD: ${PG_PASSWORD:-changeme}
+        volumes:
+            - ./docker-entrypoint-initdb.d/bamboo.sh:/docker-entrypoint-initdb.d/bamboo.sh
+            - bamboo-pg:/var/lib/postgresql/data
+        ports:
+            - "5432"
+        networks:
+            - atlassian
+            
         
     crowd:
-        container_name: atlassian-crowd
-        image: atlassian/crowd:latest
+        container_name: crowd${CONTAINER_NAME:-}
+        image: atlassian/crowd:${CROWD_VERSION:-latest}
+        environment:
+            # Database
+            - ATL_JDBC_URL=jdbc:postgresql://${CROWD_PG_URL:-crowd-postgres}:5432/${CROWD_PG_DB:-crowd}
+            - ATL_JDBC_USER=${CROWD_PG_USER:-crowd}
+            - ATL_JDBC_PASSWORD=${CROWD_PG_PASSWORD:-changeme}
+            - ATL_PROXY_NAME=crowd${DOMAIN_NAME:-}
+            - ATL_PROXY_PORT=${PROXY_PORT:-80}
+            - ATL_TOMCAT_SCHEME=${PROXY_SCHEME:-http}
+            - ATL_TOMCAT_SECURE=${PROXY_SSL:-false}
+            - ATL_TOMCAT_PORT=${CROWD_PORT:-8095}
+            - TZ=Asia/Seoul
         volumes:
-            - /data/atlassian/crowd-home:/var/atlassian/application-data/crowd
+            - ${CROWD_VOLUME:-crowd-data}:/var/atlassian/application-data/crowd
+            - /etc/localtime:/etc/localtime:ro
         ports:
-            - "8095:8095"
-        depends_on:
-            - postgres
+            - "${CROWD_PORT:-8095}:${CROWD_PORT:-8095}"
         networks:
             - atlassian
+            
  
     jira:
-        container_name: atlassian-jira-software
-        image: atlassian/jira-software:latest
+        container_name: jira${CONTAINER_NAME:-}
+        image: atlassian/jira-software:${JIRA_VERSION:-latest}
         environment:
             # Database
-            - ATL_JDBC_URL=jdbc:postgresql://postgres:5432/jira
-            - ATL_JDBC_USER=jira
-            - ATL_JDBC_PASSWORD=changeme
-            - ATL_DB_DRIVER=org.postgresql.Driver
+            - ATL_JDBC_URL=jdbc:postgresql://${JIRA_PG_URL:-jira-postgres}:5432/${JIRA_PG_DB:-jira}
+            - ATL_JDBC_USER=${JIRA_PG_USER:-jira}
+            - ATL_JDBC_PASSWORD=${JIRA_PG_PASSWORD:-changeme}
+            - ATL_PG_DRIVER=org.postgresql.Driver
             - ATL_DB_TYPE=postgres72
+            - ATL_PROXY_NAME=jira${DOMAIN_NAME:-}
+            - ATL_PROXY_PORT=${PROXY_PORT:-80}
+            - ATL_TOMCAT_SCHEME=${PROXY_SCHEME:-http}
+            - ATL_TOMCAT_SECURE=${PROXY_SSL:-false}
+            - ATL_TOMCAT_PORT=${JIRA_PORT:-8080}
+            - TZ=Asia/Seoul
+            - JVM_MAXIMUM_MEMORY=8192m
         volumes:
-            - /data/atlassian/jira-home:/var/atlassian/application-data/jira
+            - ${JIRA_VOLUME:-jira-data}:/var/atlassian/application-data/jira
+            - /etc/localtime:/etc/localtime:ro
         ports:
-            - "8080:8080"
-        depends_on:
-            - postgres
+            - "${JIRA_PORT:-8080}:${JIRA_PORT:-8080}"
         networks:
             - atlassian
+            
+            
+    jsm:
+        container_name: jsm${CONTAINER_NAME:-}
+        image: atlassian/jira-servicemanagement:${JSM_VERSION:-latest}
+        environment:
+            # Database
+            - ATL_JDBC_URL=jdbc:postgresql://${JSM_PG_URL:-jsm-postgres}:5432/${JSM_PG_DB:-jsm}
+            - ATL_JDBC_USER=${JSM_PG_USER:-jsm}
+            - ATL_JDBC_PASSWORD=${JSM_PG_PASSWORD:-changeme}
+            - ATL_PG_DRIVER=org.postgresql.Driver
+            - ATL_DB_TYPE=postgres72
+            - ATL_PROXY_NAME=jsm${DOMAIN_NAME:-}
+            - ATL_PROXY_PORT=${PROXY_PORT:-80}
+            - ATL_TOMCAT_SCHEME=${PROXY_SCHEME:-http}
+            - ATL_TOMCAT_SECURE=${PROXY_SSL:-false}
+            - ATL_TOMCAT_PORT=${JSM_PORT:-8081}
+            - TZ=Asia/Seoul
+        volumes:
+            - ${JSM_VOLUME:-jsm-data}:/var/atlassian/application-data/jira
+            - /etc/localtime:/etc/localtime:ro
+        ports:
+            - "${JSM_PORT:-8081}:${JSM_PORT:-8081}"
+        networks:
+            - atlassian
+            
  
     confluence:
-        container_name: atlassian-confluence-server
-        image: atlassian/confluence-server:latest
+        container_name: confluence${CONTAINER_NAME:-}
+        image: atlassian/confluence:${CONFLUENCE_VERSION:-latest}
         environment:
             # Database
-            - ATL_JDBC_URL=jdbc:postgresql://postgres:5432/confluence
-            - ATL_JDBC_USER=confluence
-            - ATL_JDBC_PASSWORD=changeme
+            - ATL_JDBC_URL=jdbc:postgresql://${CONFLUENCE_PG_URL:-confluence-postgres}:5432/${CONFLUENCE_PG_DB:-confluence}
+            - ATL_JDBC_USER=${CONFLUENCE_PG_USER:-confluence}
+            - ATL_JDBC_PASSWORD=${CONFLUENCE_PG_PASSWORD:-changeme}
             - ATL_DB_TYPE=postgresql
+            - ATL_PROXY_NAME=confluence${DOMAIN_NAME:-}
+            - ATL_PROXY_PORT=${PROXY_PORT:-80}
+            - ATL_TOMCAT_SCHEME=${PROXY_SCHEME:-http}
+            - ATL_TOMCAT_SECURE=${PROXY_SSL:-false}
+            - ATL_TOMCAT_PORT=${CONFLUENCE_PORT:-8090}
+            - TZ=Asia/Seoul
         volumes:
-            - /data/atlassian/confluence-home:/var/atlassian/application-data/confluence
+            - ${CONFLUENCE_VOLUME:-confluence-data}:/var/atlassian/application-data/confluence
+            - /etc/localtime:/etc/localtime:ro
         ports:
-            - "8090:8090"
-        depends_on:
-            - postgres
+            - "${CONFLUENCE_PORT:-8090}:${CONFLUENCE_PORT:-8090}"
+            - "${CONFLUENCE_SYNC_PORT:-8091}:8091"
         networks:
             - atlassian
+            
  
     bitbucket:
-        container_name: atlassian-bitbucket-server
-        image: atlassian/bitbucket-server:latest
+        container_name: bitbucket${CONTAINER_NAME:-}
+        image: atlassian/bitbucket:${BITBUCKET_VERSION:-latest}
         environment:
             # Database
-            - JDBC_URL=jdbc:postgresql://postgres:5432/bitbucket
-            - JDBC_USER=bitbucket
-            - JDBC_PASSWORD=changeme
+            - JDBC_URL=jdbc:postgresql://${BITBUCKET_PG_URL:-bitbucket-postgres}:5432/${BITBUCKET_PG_DB:-bitbucket}
+            - JDBC_USER=${BITBUCKET_PG_USER:-bitbucket}
+            - JDBC_PASSWORD=${BITBUCKET_PG_PASSWORD:-changeme}
             - JDBC_DRIVER=org.postgresql.Driver
+            - SERVER_PROXY_NAME=bitbucket${DOMAIN_NAME:-}
+            - SERVER_PROXY_PORT=${PROXY_PORT:-80}
+            - SERVER_SCHEME=${PROXY_SCHEME:-http}
+            - SERVER_SECURE=${PROXY_SSL:-false}
+            - TZ=Asia/Seoul
         volumes:
-            - /data/atlassian/bitbucket-home:/var/atlassian/application-data/bitbucket
+            - ${BITBUCKET_VOLUME:-bitbucket-data}:/var/atlassian/application-data/bitbucket
+            - /etc/localtime:/etc/localtime:ro
         ports:
-            - "7990:7990"
-        depends_on:
-            - postgres
+            - "${BITBUCKET_PORT:-7990}:7990"
         networks:
             - atlassian
- 
+
+    bitbucket-mesh:
+        container_name: bitbucket-mesh${CONTAINER_NAME:-}
+        image: atlassian/bitbucket-mesh:${BITBUCKET_MESH_VERSION:-latest}
+        environment:
+            - TZ=Asia/Seoul
+        ports:
+            - "7777:7777"
+        volumes:
+            - bitbucket-mesh-data:/var/atlassian/application-data/mesh
+            - /etc/localtime:/etc/localtime:ro
+        networks:
+            - atlassian
+
+
+
+
     bamboo:
-        container_name: atlassian-bamboo-server
-        image: atlassian/bamboo-server:latest
+        container_name: bamboo${CONTAINER_NAME:-}
+        image: atlassian/bamboo:${BAMBOO_VERSION:-latest}
         environment:
             # Database
-            - ATL_JDBC_URL=jdbc:postgresql://postgres:5432/bamboo
-            - ATL_JDBC_USER=bamboo
-            - ATL_JDBC_PASSWORD=changeme
+            - ATL_JDBC_URL=jdbc:postgresql://${BAMBOO_PG_URL:-bamboo-postgres}:5432/${BAMBOO_PG_DB:-bamboo}
+            - ATL_JDBC_USER=${BAMBOO_PG_USER:-bamboo}
+            - ATL_JDBC_PASSWORD=${BAMBOO_PG_PASSWORD:-changeme}
             - ATL_DB_TYPE=postgresql
+            - ATL_PROXY_NAME=bamboo${DOMAIN_NAME:-}
+            - ATL_PROXY_PORT=${PROXY_PORT:-80}
+            - ATL_TOMCAT_SCHEME=${PROXY_SCHEME:-http}
+            - ATL_TOMCAT_SECURE=${PROXY_SSL:-false}
+            - ATL_TOMCAT_PORT=${BAMBOO_PORT:-8085}
+            - TZ=Asia/Seoul
         volumes:
-            - /data/atlassian/bamboo-home:/var/atlassian/application-data/bamboo
+            - ${BAMBOO_VOLUME:-bamboo-data}:/var/atlassian/application-data/bamboo
+            - /etc/localtime:/etc/localtime:ro
         ports:
-            - "8085:8085"
-        depends_on:
-            - postgres
+            - "${BAMBOO_PORT:-8085}:${BAMBOO_PORT:-8085}"
         networks:
             - atlassian
- 
+
+    watchtower:
+        container_name: watchtower
+        image: containrrr/watchtower
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+            - atlassian
+
 networks:
     atlassian:
         name: atlassian
         driver: bridge
+        
+volumes:
+    crowd-pg:
+    jira-pg:
+    jsm-pg:
+    confluence-pg:
+    bitbucket-pg:
+    bamboo-pg:
+    crowd-data:
+    jira-data:
+    jsm-data:
+    confluence-data:
+    bitbucket-data:
+    bamboo-data:
+    bitbucket-mesh-data:
